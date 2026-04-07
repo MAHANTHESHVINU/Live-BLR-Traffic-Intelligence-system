@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bengaluru Traffic Pulse</title>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --sky:#e8f4ff;--sky2:#d0e8ff;--sky3:#b8d8f8;
+  --panel:#ffffffdd;--panel2:#f0f6ff;
+  --bd:#c8ddf0;--bd2:#a0c0e0;
+  --t:#0d2040;--t2:#3a5878;--t3:#7090b0;
+  --red:#e53935;--red-l:#ffebee;
+  --amber:#f57c00;--amber-l:#fff3e0;
+  --green:#00897b;--green-l:#e0f2f1;
+  --blue:#1565c0;--blue-l:#e3f2fd;
+  --cyan:#0288d1;--gold:#f9a825;
+  --shadow:0 4px 20px rgba(0,60,120,0.12);
+  --shadow3d:0 8px 32px rgba(0,60,120,0.18), 0 2px 8px rgba(0,60,120,0.1);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;font-family:'Exo 2',sans-serif;background:var(--sky);color:var(--t);overflow-x:hidden;}
+
+/* ─ SKY GRADIENT BG ─ */
+body{background:linear-gradient(160deg,#c8e8ff 0%,#ddf0ff 40%,#f0f8ff 70%,#e8f4f0 100%);}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(100,180,255,0.18),transparent),
+             radial-gradient(ellipse 60% 40% at 80% 80%,rgba(0,180,150,0.1),transparent);}
+
+/* ─ CLOUD DRIFTS ─ */
+.cloud{position:fixed;pointer-events:none;z-index:0;opacity:.5;font-size:2.5rem;animation:drift linear infinite;}
+@keyframes drift{from{transform:translateX(-120px)}to{transform:translateX(calc(100vw + 120px))}}
+
+/* ─ HEADER ─ */
+header{position:sticky;top:0;z-index:900;
+  background:rgba(255,255,255,0.88);backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--bd);padding:0 20px;height:60px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 16px rgba(0,60,120,0.1);}
+.hlogo{display:flex;align-items:center;gap:12px;}
+.hlogo-icon{width:40px;height:40px;border-radius:10px;
+  background:linear-gradient(135deg,#1565c0,#0288d1);
+  display:flex;align-items:center;justify-content:center;font-size:1.2rem;
+  box-shadow:0 4px 14px rgba(21,101,192,0.4),inset 0 1px 0 rgba(255,255,255,0.3);
+  animation:iconPulse 3s ease-in-out infinite;}
+@keyframes iconPulse{0%,100%{box-shadow:0 4px 14px rgba(21,101,192,0.4)}50%{box-shadow:0 4px 24px rgba(21,101,192,0.7)}}
+.hlogo-text h1{font-family:'Exo 2',sans-serif;font-size:.9rem;font-weight:800;color:var(--blue);letter-spacing:3px;text-transform:uppercase;}
+.hlogo-text p{font-size:.55rem;color:var(--t3);letter-spacing:2px;text-transform:uppercase;}
+.hright{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.hchip{display:flex;align-items:center;gap:6px;padding:5px 13px;border-radius:20px;font-size:.65rem;font-family:'JetBrains Mono',monospace;font-weight:500;border:1px solid;}
+.hchip.live{background:var(--red-l);border-color:rgba(229,57,53,.3);color:var(--red);}
+.hchip.weather{background:var(--amber-l);border-color:rgba(245,124,0,.3);color:var(--amber);}
+.hchip.clock-chip{background:var(--blue-l);border-color:rgba(21,101,192,.2);color:var(--blue);}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--red);animation:blink 1.1s infinite;}
+@keyframes blink{0%,100%{opacity:1;box-shadow:0 0 5px var(--red)}50%{opacity:.2;box-shadow:none}}
+#clock{font-family:'JetBrains Mono',monospace;}
+.update-bar{font-size:.55rem;color:var(--t3);font-family:'JetBrains Mono',monospace;background:var(--panel2);padding:3px 10px;border-radius:10px;border:1px solid var(--bd);}
+
+/* ─ MAIN GRID ─ */
+.app{position:relative;z-index:1;display:grid;grid-template-columns:300px 1fr 320px;min-height:calc(100vh - 60px);gap:0;}
+.col-l{padding:16px;overflow-y:auto;border-right:1px solid var(--bd);}
+.col-c{padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;}
+.col-r{padding:16px;overflow-y:auto;border-left:1px solid var(--bd);}
+
+/* ─ 3D CARD ─ */
+.card3d{background:var(--panel);border:1px solid var(--bd);border-radius:16px;padding:16px;
+  margin-bottom:14px;position:relative;overflow:hidden;
+  box-shadow:var(--shadow3d);
+  transform:perspective(600px) rotateX(1deg);
+  transition:transform .3s,box-shadow .3s;}
+.card3d:hover{transform:perspective(600px) rotateX(0deg) translateY(-3px);box-shadow:0 16px 48px rgba(0,60,120,0.2);}
+.card3d::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--blue),var(--cyan),#00bcd4);opacity:.8;}
+.card3d::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.6),transparent);}
+.ctitle{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:2.5px;color:var(--t3);
+  text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+.cbadge{background:var(--blue-l);color:var(--blue);border-radius:4px;padding:1px 7px;font-size:.53rem;font-weight:700;}
+.cbadge.live{background:var(--red-l);color:var(--red);}
+.cbadge.green{background:var(--green-l);color:var(--green);}
+
+/* ─ KPI CARDS 3D ─ */
+.kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.kpi3d{border-radius:14px;padding:14px 12px;cursor:pointer;position:relative;overflow:hidden;
+  transition:all .28s;border:1px solid transparent;
+  box-shadow:0 6px 20px rgba(0,0,0,.1),0 2px 6px rgba(0,0,0,.07),inset 0 1px 0 rgba(255,255,255,.7);}
+.kpi3d:hover{transform:translateY(-5px) scale(1.02);box-shadow:0 14px 36px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.9);}
+.kpi3d.blue{background:linear-gradient(145deg,#e8f4ff,#d0e8ff);border-color:rgba(21,101,192,.2);}
+.kpi3d.amber{background:linear-gradient(145deg,#fff8e8,#fff0cc);border-color:rgba(245,124,0,.2);}
+.kpi3d.red{background:linear-gradient(145deg,#ffeeee,#ffd8d8);border-color:rgba(229,57,53,.2);}
+.kpi3d.green{background:linear-gradient(145deg,#e4f8f4,#cceeea);border-color:rgba(0,137,123,.2);}
+.kpi3d-label{font-size:.58rem;letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:7px;}
+.kpi3d.blue .kpi3d-label{color:var(--blue);}
+.kpi3d.amber .kpi3d-label{color:var(--amber);}
+.kpi3d.red .kpi3d-label{color:var(--red);}
+.kpi3d.green .kpi3d-label{color:var(--green);}
+.kpi3d-val{font-family:'JetBrains Mono',monospace;font-size:1.7rem;font-weight:700;line-height:1;margin-bottom:4px;}
+.kpi3d.blue .kpi3d-val{color:var(--blue);}
+.kpi3d.amber .kpi3d-val{color:var(--amber);}
+.kpi3d.red .kpi3d-val{color:var(--red);}
+.kpi3d.green .kpi3d-val{color:var(--green);}
+.kpi3d-sub{font-size:.6rem;color:var(--t3);}
+.kpi3d-hint{position:absolute;bottom:7px;right:8px;font-size:.5rem;color:var(--t3);opacity:0;transition:.25s;font-family:'JetBrains Mono',monospace;}
+.kpi3d:hover .kpi3d-hint{opacity:1;}
+.kpi3d-icon{position:absolute;top:10px;right:12px;font-size:1.6rem;opacity:.15;}
+
+/* ─ 3D CITY MAP ─ */
+.city3d-wrap{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--bd);
+  box-shadow:var(--shadow3d);background:#c8dff0;height:360px;}
+.city3d-canvas{width:100%;height:100%;display:block;}
+.city3d-legend{position:absolute;bottom:12px;left:12px;background:rgba(255,255,255,.92);
+  border:1px solid var(--bd);border-radius:10px;padding:9px 13px;
+  display:flex;flex-direction:column;gap:5px;font-size:.62rem;box-shadow:var(--shadow);}
+.leg-row{display:flex;align-items:center;gap:7px;color:var(--t2);}
+.leg-dot{width:10px;height:10px;border-radius:50%;}
+.city3d-info{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.92);
+  border:1px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:.65rem;
+  font-family:'JetBrains Mono',monospace;color:var(--blue);box-shadow:var(--shadow);}
+.map-node-click-tip{position:absolute;bottom:12px;right:12px;background:rgba(21,101,192,.1);
+  border:1px solid rgba(21,101,192,.25);border-radius:8px;padding:5px 10px;font-size:.58rem;color:var(--blue);}
+
+/* ─ ROUTE PLANNER 3D ─ */
+.rinput{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#f0f8ff,#e8f4ff);
+  border:1.5px solid var(--bd);border-radius:10px;padding:9px 12px;margin-bottom:8px;
+  transition:border-color .25s;box-shadow:0 2px 8px rgba(0,60,120,.07);}
+.rinput:focus-within{border-color:var(--blue);}
+.rinput select{flex:1;background:transparent;border:none;outline:none;color:var(--t);font-family:'Exo 2',sans-serif;font-size:.8rem;}
+.route-btn{width:100%;padding:11px;margin-top:4px;
+  background:linear-gradient(135deg,#1565c0,#0288d1);border:none;border-radius:10px;
+  color:#fff;font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:2px;text-transform:uppercase;
+  cursor:pointer;font-weight:700;transition:all .3s;
+  box-shadow:0 6px 20px rgba(21,101,192,.4),inset 0 1px 0 rgba(255,255,255,.2);}
+.route-btn:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(21,101,192,.5);}
+.route-result{display:none;margin-top:14px;}
+.route-result.show{display:block;}
+.rr-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;
+  padding:12px;background:linear-gradient(135deg,var(--blue-l),#e0efff);border-radius:12px;
+  border:1px solid rgba(21,101,192,.2);}
+.rr-time{font-family:'JetBrains Mono',monospace;font-size:1.7rem;font-weight:700;color:var(--blue);}
+.rr-meta{font-size:.67rem;color:var(--t3);}
+.rt-step{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--sky2);}
+.rt-dot{width:11px;height:11px;border-radius:50%;margin-top:3px;flex-shrink:0;
+  box-shadow:0 2px 6px rgba(0,0,0,.2);}
+.rt-road{font-size:.76rem;font-weight:700;color:var(--t);}
+.rt-detail{font-size:.64rem;color:var(--t3);margin-top:2px;}
+.rt-badge{display:inline-block;padding:2px 9px;border-radius:6px;font-size:.58rem;font-family:'JetBrains Mono',monospace;margin-top:5px;font-weight:700;}
+.tnt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+.tnt-card{background:linear-gradient(145deg,var(--panel2),#eaf2ff);border:1px solid var(--bd);
+  border-radius:10px;padding:12px;text-align:center;
+  box-shadow:0 3px 10px rgba(0,60,120,.08),inset 0 1px 0 rgba(255,255,255,.7);}
+.tnt-lbl{font-size:.55rem;letter-spacing:2px;color:var(--t3);text-transform:uppercase;margin-bottom:6px;font-family:'JetBrains Mono',monospace;}
+.tnt-val{font-family:'JetBrains Mono',monospace;font-size:1.2rem;font-weight:700;}
+.tnt-sub{font-size:.6rem;color:var(--t3);margin-top:3px;}
+.rf-wrap{margin-top:12px;}
+.rf-title{font-size:.55rem;letter-spacing:2px;color:var(--t3);text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:6px;}
+.rf-bars{display:flex;align-items:flex-end;gap:4px;height:52px;}
+.rf-bw{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end;}
+.rf-bar{width:100%;border-radius:3px 3px 0 0;min-height:3px;transition:height 1.2s cubic-bezier(.34,1.56,.64,1);}
+.rf-lbl{font-size:.5rem;color:var(--t3);font-family:'JetBrains Mono',monospace;}
+.route-tip{margin-top:10px;padding:10px 12px;background:var(--green-l);border:1px solid rgba(0,137,123,.25);border-radius:9px;font-size:.72rem;color:#00695c;}
+
+/* ─ PRED ROWS ─ */
+.pred-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--sky2);}
+.pred-time{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--t3);width:46px;flex-shrink:0;}
+.pred-track{flex:1;height:8px;background:var(--sky2);border-radius:4px;overflow:hidden;
+  box-shadow:inset 0 1px 3px rgba(0,60,120,.1);}
+.pred-fill{height:100%;border-radius:4px;transition:width 1.4s cubic-bezier(.34,1.56,.64,1);}
+.pred-pct{font-family:'JetBrains Mono',monospace;font-size:.62rem;width:34px;text-align:right;font-weight:700;}
+
+/* ─ LIVE ALERTS ─ */
+.alert-feed{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;}
+.alert-feed::-webkit-scrollbar{width:3px;}
+.alert-feed::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px;}
+.alert-item{display:flex;gap:10px;padding:10px;border-radius:10px;cursor:pointer;
+  border:1px solid;transition:all .25s;position:relative;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.alert-item:hover{transform:translateX(4px);box-shadow:0 4px 16px rgba(0,0,0,.12);}
+.alert-item.danger{background:linear-gradient(135deg,#fff5f5,var(--red-l));border-color:rgba(229,57,53,.25);}
+.alert-item.warn{background:linear-gradient(135deg,#fffbf0,var(--amber-l));border-color:rgba(245,124,0,.25);}
+.alert-item.info{background:linear-gradient(135deg,#f5fbff,var(--blue-l));border-color:rgba(21,101,192,.2);}
+.alert-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px;}
+.alert-title{font-size:.74rem;font-weight:700;margin-bottom:2px;}
+.alert-item.danger .alert-title{color:var(--red);}
+.alert-item.warn .alert-title{color:var(--amber);}
+.alert-item.info .alert-title{color:var(--blue);}
+.alert-meta{font-size:.62rem;color:var(--t3);font-family:'JetBrains Mono',monospace;}
+.alert-time{font-size:.55rem;color:var(--t3);font-family:'JetBrains Mono',monospace;margin-top:3px;}
+.alert-new{font-size:.48rem;padding:1px 6px;border-radius:3px;background:var(--red);color:#fff;margin-left:5px;vertical-align:middle;}
+.alert-updated{position:absolute;top:6px;right:8px;font-size:.5rem;color:var(--t3);font-family:'JetBrains Mono',monospace;}
+
+/* ─ SIGNALS 3D ─ */
+.signal-pole{display:flex;align-items:center;gap:12px;padding:10px 12px;
+  background:linear-gradient(135deg,#f5f9ff,#eaf3ff);border:1px solid var(--bd);
+  border-radius:12px;margin-bottom:8px;
+  box-shadow:0 3px 12px rgba(0,60,120,.09),inset 0 1px 0 rgba(255,255,255,.8);
+  transition:all .3s;}
+.signal-pole:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,60,120,.14);}
+.signal-housing{width:28px;border-radius:6px;padding:4px 5px;
+  background:linear-gradient(180deg,#2a2a2a,#1a1a1a);
+  display:flex;flex-direction:column;gap:3px;
+  box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.1);}
+.sig-bulb{width:18px;height:18px;border-radius:50%;
+  box-shadow:inset 0 2px 4px rgba(0,0,0,.3);}
+.sig-bulb.r-off{background:#660000;}
+.sig-bulb.y-off{background:#665500;}
+.sig-bulb.g-off{background:#005500;}
+.sig-bulb.r-on{background:radial-gradient(circle at 35% 35%,#ff6666,#cc0000);box-shadow:0 0 12px #ff3333,0 0 4px #ff6666,inset 0 2px 4px rgba(255,255,255,.3);}
+.sig-bulb.y-on{background:radial-gradient(circle at 35% 35%,#ffe066,#cc9900);box-shadow:0 0 12px #ffcc00,0 0 4px #ffe066,inset 0 2px 4px rgba(255,255,255,.3);}
+.sig-bulb.g-on{background:radial-gradient(circle at 35% 35%,#66ff88,#00aa33);box-shadow:0 0 12px #00ee44,0 0 4px #66ff88,inset 0 2px 4px rgba(255,255,255,.3);}
+.sig-info{flex:1;}
+.sig-loc{font-size:.74rem;font-weight:700;color:var(--t);}
+.sig-phase{font-size:.62rem;color:var(--t3);margin-top:2px;font-family:'JetBrains Mono',monospace;}
+.sig-timer{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;color:var(--blue);min-width:38px;text-align:right;}
+
+/* ─ WEATHER 3D ─ */
+.weather3d{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
+.wcard3d{background:linear-gradient(145deg,#f0f8ff,#e0f0ff);border:1px solid rgba(21,101,192,.18);
+  border-radius:12px;padding:12px;text-align:center;
+  box-shadow:0 4px 14px rgba(0,60,120,.1),inset 0 1px 0 rgba(255,255,255,.8);}
+.wcard3d-val{font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:700;color:var(--amber);margin-bottom:3px;}
+.wcard3d-lbl{font-size:.56rem;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;}
+.weather-alert{padding:10px 12px;border-radius:10px;font-size:.72rem;
+  background:linear-gradient(135deg,var(--amber-l),#fff8e8);
+  border:1px solid rgba(245,124,0,.3);color:#7c4500;
+  box-shadow:0 2px 8px rgba(245,124,0,.12);}
+.weather-detail{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px;}
+.wd-item{background:rgba(255,255,255,.7);border:1px solid var(--bd);border-radius:8px;padding:8px;text-align:center;}
+.wd-val{font-family:'JetBrains Mono',monospace;font-size:.9rem;font-weight:700;color:var(--blue);}
+.wd-lbl{font-size:.55rem;color:var(--t3);text-transform:uppercase;letter-spacing:1px;}
+
+/* ─ MODAL ─ */
+.modal-bg{position:fixed;inset:0;background:rgba(0,30,80,.4);backdrop-filter:blur(8px);z-index:2000;
+  display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;padding:16px;}
+.modal-bg.show{opacity:1;pointer-events:all;}
+.modal{background:linear-gradient(160deg,#ffffff,#f0f8ff);border:1px solid var(--bd);border-radius:20px;
+  padding:26px;width:100%;max-width:680px;max-height:88vh;overflow-y:auto;
+  transform:scale(.93) translateY(16px);transition:transform .3s;position:relative;
+  box-shadow:0 24px 80px rgba(0,30,80,.25),0 8px 32px rgba(0,30,80,.15);}
+.modal-bg.show .modal{transform:scale(1) translateY(0);}
+.modal-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;
+  background:var(--sky2);border:1px solid var(--bd);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:.9rem;color:var(--t2);transition:all .25s;}
+.modal-close:hover{background:var(--red-l);color:var(--red);}
+.m-title{font-family:'Exo 2',sans-serif;font-size:1.25rem;font-weight:800;margin-bottom:4px;color:var(--t);}
+.m-sub{font-size:.66rem;color:var(--t3);margin-bottom:18px;font-family:'JetBrains Mono',monospace;}
+.mkpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
+.mkpi{background:linear-gradient(145deg,var(--panel2),#eaf2ff);border:1px solid var(--bd);border-radius:12px;padding:14px;text-align:center;
+  box-shadow:0 3px 10px rgba(0,60,120,.08);}
+.mkpi-n{font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:700;margin-bottom:3px;}
+.mkpi-l{font-size:.57rem;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;}
+.msec{margin-bottom:16px;}
+.msec h4{font-size:.58rem;letter-spacing:2.5px;color:var(--t3);text-transform:uppercase;
+  font-family:'JetBrains Mono',monospace;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--sky2);}
+.inc-row{display:flex;gap:10px;padding:10px;border-radius:9px;margin-bottom:7px;border-left:3px solid;}
+.inc-row.r{background:var(--red-l);border-color:var(--red);}
+.inc-row.o{background:var(--amber-l);border-color:var(--amber);}
+.inc-row.g{background:var(--green-l);border-color:var(--green);}
+.inc-loc{font-size:.78rem;font-weight:700;color:var(--t);margin-bottom:3px;}
+.inc-meta{font-size:.64rem;color:var(--t2);font-family:'JetBrains Mono',monospace;}
+.inc-badge{display:inline-block;padding:2px 9px;border-radius:5px;font-size:.57rem;font-family:'JetBrains Mono',monospace;margin-top:5px;font-weight:700;}
+.inc-badge.r{background:var(--red-l);color:var(--red);}
+.inc-badge.o{background:var(--amber-l);color:var(--amber);}
+.inc-badge.g{background:var(--green-l);color:var(--green);}
+.mc-wrap{height:90px;display:flex;align-items:flex-end;gap:5px;margin-top:8px;}
+.mc-bw{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.mc-b{width:100%;border-radius:3px 3px 0 0;transition:height 1s ease;min-height:2px;}
+.mc-l{font-size:.52rem;color:var(--t3);font-family:'JetBrains Mono',monospace;}
+
+/* ─ FOOTER ─ */
+footer{position:relative;z-index:1;background:rgba(255,255,255,.88);backdrop-filter:blur(16px);
+  border-top:1px solid var(--bd);padding:10px 20px;display:flex;align-items:center;
+  justify-content:space-between;font-size:.6rem;color:var(--t3);font-family:'JetBrains Mono',monospace;flex-wrap:wrap;gap:8px;}
+.ftags{display:flex;gap:14px;flex-wrap:wrap;}
+.ftag{display:flex;align-items:center;gap:5px;}
+.fdot{width:7px;height:7px;border-radius:50%;}
+
+/* ─ RESPONSIVE ─ */
+@media(max-width:1100px){.app{grid-template-columns:260px 1fr 280px;}}
+@media(max-width:860px){
+  .app{grid-template-columns:1fr;}
+  .col-l,.col-r{border:none;border-bottom:1px solid var(--bd);}
+  .hright{gap:6px;}
+  .hchip.weather{display:none;}
+  .mkpi-row{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:500px){.hchip.clock-chip{display:none;}.kpi-row{grid-template-columns:1fr 1fr;}}
+
+/* ─ SPILL BADGES ─ */
+.spill{padding:2px 8px;border-radius:7px;font-size:.57rem;font-family:'JetBrains Mono',monospace;font-weight:700;}
+.spill.h{background:var(--red-l);color:var(--red);}
+.spill.m{background:var(--amber-l);color:var(--amber);}
+.spill.l{background:var(--green-l);color:var(--green);}
+</style>
+</head>
+<body>
+
+<!-- CLOUD DECORATIONS -->
+<div class="cloud" style="top:8%;animation-duration:60s;animation-delay:-10s;font-size:3rem;opacity:.3;">☁</div>
+<div class="cloud" style="top:20%;animation-duration:80s;animation-delay:-35s;font-size:2rem;opacity:.2;">☁</div>
+<div class="cloud" style="top:5%;animation-duration:100s;animation-delay:-60s;font-size:4rem;opacity:.18;">☁</div>
+
+<!-- HEADER -->
+<header>
+  <div class="hlogo">
+    <div class="hlogo-icon">🚦</div>
+    <div class="hlogo-text">
+      <h1>TRAFFIC PULSE</h1>
+      <p>Bengaluru Urban Mobility Intelligence</p>
+    </div>
+  </div>
+  <div class="hright">
+    <div class="hchip weather" id="weatherChip">🌤 <span id="hWeather">27°C · Partly Cloudy</span></div>
+    <div class="hchip live"><div class="live-dot"></div>LIVE</div>
+    <div class="hchip clock-chip" id="clock">--:--:--</div>
+    <div class="update-bar" id="updateBar">Next update: --</div>
+  </div>
+</header>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-close" onclick="closeModal()">✕</div>
+    <div class="m-title" id="mTitle">—</div>
+    <div class="m-sub" id="mSub">—</div>
+    <div id="mBody"></div>
+  </div>
+</div>
+
+<div class="app">
+
+<!-- ═══ LEFT COL ═══ -->
+<div class="col-l">
+
+  <!-- KPI Cards -->
+  <div class="card3d">
+    <div class="ctitle">City Overview <span class="cbadge live">LIVE</span></div>
+    <div class="kpi-row">
+      <div class="kpi3d blue" onclick="openModal('speed')">
+        <div class="kpi3d-icon">⚡</div>
+        <div class="kpi3d-label">Avg Speed</div>
+        <div class="kpi3d-val" id="kpiSpeed">--</div>
+        <div class="kpi3d-sub" id="kpiSpeedSub">km/h city avg</div>
+        <div class="kpi3d-hint">tap for details →</div>
+      </div>
+      <div class="kpi3d amber" onclick="openModal('congestion')">
+        <div class="kpi3d-icon">🚦</div>
+        <div class="kpi3d-label">Congestion</div>
+        <div class="kpi3d-val" id="kpiCong">--</div>
+        <div class="kpi3d-sub" id="kpiCongSub">city-wide avg</div>
+        <div class="kpi3d-hint">tap for details →</div>
+      </div>
+      <div class="kpi3d red" onclick="openModal('accidents')">
+        <div class="kpi3d-icon">🚨</div>
+        <div class="kpi3d-label">Accidents</div>
+        <div class="kpi3d-val" id="kpiAcc">--</div>
+        <div class="kpi3d-sub" id="kpiAccSub">active incidents</div>
+        <div class="kpi3d-hint">tap for details →</div>
+      </div>
+      <div class="kpi3d green" onclick="openModal('vehicles')">
+        <div class="kpi3d-icon">🚗</div>
+        <div class="kpi3d-label">Vehicles</div>
+        <div class="kpi3d-val" id="kpiVeh">--</div>
+        <div class="kpi3d-sub">on road now</div>
+        <div class="kpi3d-hint">tap for details →</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Route Planner -->
+  <div class="card3d">
+    <div class="ctitle">🗺 Route Planner <span class="cbadge">LIVE TRAFFIC</span></div>
+    <div class="rinput">
+      <span>🟢</span>
+      <select id="rFrom">
+        <option value="">From (Origin)...</option>
+        <option value="silkboard">Silk Board Junction</option>
+        <option value="mgroad">MG Road</option>
+        <option value="hebbal">Hebbal</option>
+        <option value="krpuram">KR Puram</option>
+        <option value="whitefield">Whitefield</option>
+        <option value="ecity">Electronic City</option>
+        <option value="yeshwantpur">Yeshwantpur</option>
+        <option value="bannerghatta">Bannerghatta Road</option>
+        <option value="airport">Kempegowda Airport</option>
+      </select>
+    </div>
+    <div class="rinput">
+      <span>🔴</span>
+      <select id="rTo">
+        <option value="">To (Destination)...</option>
+        <option value="silkboard">Silk Board Junction</option>
+        <option value="mgroad">MG Road</option>
+        <option value="hebbal">Hebbal</option>
+        <option value="krpuram">KR Puram</option>
+        <option value="whitefield">Whitefield</option>
+        <option value="ecity">Electronic City</option>
+        <option value="yeshwantpur">Yeshwantpur</option>
+        <option value="bannerghatta">Bannerghatta Road</option>
+        <option value="airport">Kempegowda Airport</option>
+      </select>
+    </div>
+    <div class="rinput">
+      <span>⏰</span>
+      <select id="rTime">
+        <option value="now">Leave Now</option>
+        <option value="30m">In 30 Minutes</option>
+        <option value="1h">In 1 Hour</option>
+        <option value="2h">In 2 Hours</option>
+        <option value="tomorrow">Tomorrow 8 AM</option>
+      </select>
+    </div>
+    <button class="route-btn" onclick="planRoute()">⚡ Analyse Route Traffic</button>
+
+    <div class="route-result" id="routeResult">
+      <div class="rr-header">
+        <div><div class="rr-time" id="rrTime">—</div><div class="rr-meta" id="rrMeta">—</div></div>
+        <div id="rrStatus"></div>
+      </div>
+      <div id="routeSteps"></div>
+      <div class="tnt-grid" id="tntGrid"></div>
+      <div class="rf-wrap">
+        <div class="rf-title">Congestion Forecast Along Route (6h)</div>
+        <div class="rf-bars" id="rfBars"></div>
+        <div style="display:flex;justify-content:space-between;font-size:.5rem;color:var(--t3);font-family:'JetBrains Mono',monospace;"><span>Now</span><span>+1h</span><span>+2h</span><span>+3h</span><span>+4h</span><span>+5h</span></div>
+      </div>
+      <div class="route-tip" id="routeTip">—</div>
+    </div>
+  </div>
+
+  <!-- Congestion Forecast -->
+  <div class="card3d">
+    <div class="ctitle">⏱ Congestion Forecast <span class="cbadge" id="forecastUpdated">—</span></div>
+    <div id="predRows"></div>
+    <div style="margin-top:10px;padding:10px;background:var(--green-l);border:1px solid rgba(0,137,123,.25);border-radius:9px;font-size:.7rem;color:#00695c;">
+      ✅ <strong>Best windows today:</strong> 11 AM–12:30 PM &amp; after 8 PM<br/>
+      <span style="font-size:.62rem;color:var(--t3);">⛔ Avoid: 8–10 AM · 5–7 PM peak hours</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ CENTER COL ═══ -->
+<div class="col-c">
+
+  <!-- 3D City Map (Canvas) -->
+  <div class="card3d" style="padding:0;overflow:hidden;margin-bottom:0;">
+    <div style="padding:12px 16px 8px;display:flex;align-items:center;justify-content:space-between;">
+      <div class="ctitle" style="margin:0;">🏙 Live 3D City Map — Bengaluru</div>
+      <div style="font-size:.6rem;color:var(--t3);font-family:'JetBrains Mono',monospace;" id="mapTime">—</div>
+    </div>
+    <div class="city3d-wrap" style="border-radius:0 0 16px 16px;border:none;height:340px;">
+      <canvas class="city3d-canvas" id="city3d"></canvas>
+      <div class="city3d-legend">
+        <div class="leg-row"><div class="leg-dot" style="background:#e53935;"></div>High Congestion (>75%)</div>
+        <div class="leg-row"><div class="leg-dot" style="background:#f9a825;"></div>Moderate (50–75%)</div>
+        <div class="leg-row"><div class="leg-dot" style="background:#00897b;"></div>Flowing (<50%)</div>
+      </div>
+      <div class="city3d-info" id="city3dInfo">Click a building for details</div>
+      <div class="map-node-click-tip">👆 Click buildings for live data</div>
+    </div>
+  </div>
+
+  <!-- Live Alerts CENTRE -->
+  <div class="card3d">
+    <div class="ctitle">🚨 Live Alerts
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="cbadge live" id="alertCount">—</span>
+        <span style="font-size:.55rem;color:var(--t3);font-family:'JetBrains Mono',monospace;" id="alertRefreshLabel">Refreshes hourly</span>
+      </div>
+    </div>
+    <div class="alert-feed" id="alertFeed"></div>
+  </div>
+
+</div>
+
+<!-- ═══ RIGHT COL ═══ -->
+<div class="col-r">
+
+  <!-- Weather Impact -->
+  <div class="card3d">
+    <div class="ctitle">🌦 Weather Impact <span class="cbadge" id="weatherUpdated">—</span></div>
+    <div class="weather3d">
+      <div class="wcard3d"><div class="wcard3d-val" id="wTemp">27°C</div><div class="wcard3d-lbl">Temp</div></div>
+      <div class="wcard3d"><div class="wcard3d-val" id="wHum">72%</div><div class="wcard3d-lbl">Humidity</div></div>
+      <div class="wcard3d"><div class="wcard3d-val" style="font-size:1.3rem;" id="wIcon">🌤</div><div class="wcard3d-lbl">Condition</div></div>
+    </div>
+    <div class="weather-detail">
+      <div class="wd-item"><div class="wd-val" id="wWind">12 km/h</div><div class="wd-lbl">Wind</div></div>
+      <div class="wd-item"><div class="wd-val" id="wVis">8 km</div><div class="wd-lbl">Visibility</div></div>
+      <div class="wd-item"><div class="wd-val" id="wUV">6</div><div class="wd-lbl">UV Index</div></div>
+      <div class="wd-item"><div class="wd-val" id="wRain">18%</div><div class="wd-lbl">Rain Risk</div></div>
+    </div>
+    <div class="weather-alert" id="weatherAlert" style="margin-top:10px;">⚠ Light rain expected 3–5 PM. Expect +18% congestion on ORR.</div>
+  </div>
+
+  <!-- Traffic Signals 3D -->
+  <div class="card3d">
+    <div class="ctitle">🚦 Signal Status <span class="cbadge" id="signalUpdated">—</span></div>
+    <div id="signalList"></div>
+  </div>
+
+</div>
+
+</div><!-- .app -->
+
+<footer>
+  <span>BENGALURU TRAFFIC PULSE v4.0 · Live data simulated · All panels refresh hourly</span>
+  <div class="ftags">
+    <div class="ftag"><div class="fdot" style="background:#e53935;"></div>ORR — High</div>
+    <div class="ftag"><div class="fdot" style="background:#f9a825;"></div>MG Road — Moderate</div>
+    <div class="ftag"><div class="fdot" style="background:#00897b;"></div>NH-7 — Clear</div>
+  </div>
+  <span id="footerTime">—</span>
+</footer>
+
+<!-- ══════════════════ JAVASCRIPT ══════════════════ -->
+<script>
+// ── DATA POOLS ─────────────────────────────────────────────
+const NODES={
+  silkboard:  {name:'Silk Board Junction',  speed:12,cong:92,wait:'18 min',vol:'4,200/hr',incidents:4,lanes:6},
+  mgroad:     {name:'MG Road / Brigade Rd', speed:19,cong:78,wait:'13 min',vol:'3,500/hr',incidents:3,lanes:4},
+  hebbal:     {name:'Hebbal Flyover',        speed:18,cong:74,wait:'11 min',vol:'3,800/hr',incidents:2,lanes:8},
+  krpuram:    {name:'KR Puram Bridge',       speed:22,cong:61,wait:'7 min', vol:'2,900/hr',incidents:2,lanes:4},
+  whitefield: {name:'Whitefield Junction',   speed:29,cong:52,wait:'6 min', vol:'2,600/hr',incidents:1,lanes:6},
+  ecity:      {name:'Electronic City',       speed:34,cong:38,wait:'4 min', vol:'2,100/hr',incidents:0,lanes:4},
+  yeshwantpur:{name:'Yeshwantpur Junction',  speed:25,cong:55,wait:'8 min', vol:'2,750/hr',incidents:1,lanes:4},
+  bannerghatta:{name:'Bannerghatta Road',    speed:32,cong:44,wait:'5 min', vol:'2,300/hr',incidents:0,lanes:4},
+  airport:    {name:'Kempegowda Airport Rd', speed:58,cong:22,wait:'2 min', vol:'1,200/hr',incidents:0,lanes:8},
+};
+
+// Alert pool — randomly sampled each refresh to simulate real updates
+const ALERT_POOL=[
+  {type:'danger',icon:'🚨',title:'Accident — Silk Board Junction',loc:'Hosur Road approach, near NICE road junction',time_offset:-14,desc:'2-vehicle collision. 2 lanes blocked. Police on scene.',clear:'35 min'},
+  {type:'danger',icon:'🚨',title:'Breakdown — MG Road Underpass',loc:'Brigade Road intersection, right lane',time_offset:-9,desc:'Vehicle breakdown blocking right lane. Traffic police directing.',clear:'15 min'},
+  {type:'danger',icon:'🚨',title:'Accident — KR Puram Bridge',loc:'Main approach, westbound lane',time_offset:-31,desc:'Overloaded truck stalled on bridge. Causing major backup.',clear:'45 min'},
+  {type:'warn', icon:'⚠️',title:'Waterlogging — Hebbal Flyover Ramp',loc:'Flyover entry ramp, near HP petrol pump',time_offset:-22,desc:'Heavy rainwater accumulation. Slow movement expected.',clear:'Ongoing'},
+  {type:'warn', icon:'⚠️',title:'Road Work — ORR KM 24',loc:'Between Marathahalli and Sarjapur ORR',time_offset:-180,desc:'Night road widening work. Partial lane closure 10 PM–6 AM.',clear:'Scheduled'},
+  {type:'warn', icon:'⚠️',title:'Pothole Alert — Whitefield Road',loc:'Near Phoenix Mall signal, inbound',time_offset:-55,desc:'Large pothole causing traffic snarls. BBMP notified.',clear:'2 hrs'},
+  {type:'info', icon:'📢',title:'Event — Cubbon Park Political Rally',loc:'Cubbon Park vicinity, Kasturba Road',time_offset:-120,desc:'Large event expected till 8 PM. Expect delays in CBD area.',clear:'8 PM'},
+  {type:'info', icon:'ℹ️',title:'BMTC Route Diversion — MG Road',loc:'Routes 500C, 201R, 335E diverted',time_offset:-45,desc:'Due to event at Cubbon Park. Alternate pick-up points active.',clear:'Till 8 PM'},
+  {type:'warn', icon:'🌧',title:'Rain Alert — South Bengaluru',loc:'Bannerghatta Road, JP Nagar, BTM Layout',time_offset:-5,desc:'IMD warns of heavy showers between 3–5 PM. Waterlogging risk.',clear:'5 PM'},
+  {type:'danger',icon:'🔥',title:'Signal Failure — Electronic City',loc:'Toll gate junction, Phase 1',time_offset:-18,desc:'Traffic signal malfunction. Police deployed manually.',clear:'30 min'},
+  {type:'info', icon:'🚧',title:'Metro Work — Koramangala 80ft Road',loc:'Near Forum Mall junction',time_offset:-240,desc:'BMRCL utility shifting work. Right lane narrowed.',clear:'3 weeks'},
+  {type:'danger',icon:'🚑',title:'Ambulance Corridor Active',loc:'Victoria Hospital to Silk Board, Hosur Road',time_offset:-3,desc:'Emergency corridor requested. Please give way on Hosur Road.',clear:'20 min'},
+];
+
+// Weather pool — shuffled hourly
+const WEATHER_POOL=[
+  {temp:'27°C',hum:'72%',icon:'🌤',wind:'12 km/h',vis:'8 km',uv:'6',rain:'18%',alert:'⚠ Light rain expected 3–5 PM. +18% congestion on ORR likely.',header:'27°C · Partly Cloudy'},
+  {temp:'28°C',hum:'68%',icon:'☀️',wind:'9 km/h', vis:'12 km',uv:'8',rain:'5%', alert:'✅ Clear skies. Good driving conditions. UV high — carry water.',header:'28°C · Sunny'},
+  {temp:'25°C',hum:'84%',icon:'🌧',wind:'18 km/h',vis:'4 km', uv:'3',rain:'75%',alert:'🚨 Heavy rain warning! Waterlogging risk at Silk Board, Hebbal. Allow extra 25–30 min.',header:'25°C · Heavy Rain'},
+  {temp:'26°C',hum:'76%',icon:'⛅',wind:'14 km/h',vis:'6 km', uv:'5',rain:'35%',alert:'⚠ Cloudy with intermittent showers. Visibility reduced on ORR. Drive carefully.',header:'26°C · Overcast'},
+  {temp:'24°C',hum:'80%',icon:'🌦',wind:'20 km/h',vis:'5 km', uv:'4',rain:'55%',alert:'⚠ Thunderstorm warning after 4 PM. Avoid low-lying roads near Bellandur lake.',header:'24°C · Thunderstorm Risk'},
+];
+
+// Signal states pool
+const SIGNAL_LOCS=['Silk Board Signal','Hebbal Ramp','MG Road Main','KR Puram Bridge','Whitefield Jn','Electronic City TG','Yeshwantpur Circle','Bannerghatta-ISRO'];
+const SIGNAL_PHASES=['Red Phase','Green Phase','Amber Phase'];
+
+// Route definitions
+const ROUTES={
+  'silkboard-mgroad':  {dist:'8.2 km',base:22,steps:[{road:'Hosur Road',km:'4 km',bc:88},{road:'Koramangala 4th Block',km:'2.5 km',bc:62},{road:'Residency Rd→MG Road',km:'1.7 km',bc:80}]},
+  'mgroad-ecity':      {dist:'19.4 km',base:34,steps:[{road:'Hosur Road (North)',km:'8 km',bc:65},{road:'Silk Board Junction',km:'1 km',bc:92},{road:'Hosur Road (South)',km:'10.4 km',bc:52}]},
+  'hebbal-whitefield': {dist:'22.1 km',base:42,steps:[{road:'Outer Ring Road N',km:'10 km',bc:58},{road:'KR Puram Bridge',km:'2 km',bc:61},{road:'Whitefield Road',km:'10.1 km',bc:40}]},
+  'krpuram-ecity':     {dist:'24.8 km',base:50,steps:[{road:'ORR East',km:'10 km',bc:60},{road:'Silk Board Junction',km:'1 km',bc:92},{road:'Hosur Road South',km:'13.8 km',bc:50}]},
+  'silkboard-hebbal':  {dist:'18.6 km',base:38,steps:[{road:'Outer Ring Road',km:'14 km',bc:72},{road:'Hebbal Ramp',km:'4.6 km',bc:74}]},
+  'mgroad-whitefield': {dist:'18.4 km',base:36,steps:[{road:'Old Madras Road',km:'10 km',bc:55},{road:'Whitefield Road',km:'8.4 km',bc:40}]},
+};
+const TIME_MULT={'now':1,'30m':1.12,'1h':1.22,'2h':0.88,'tomorrow':0.72};
+const TIME_TIPS={
+  'now':'Traffic is currently heavy. If possible, delay departure by 45–60 min.',
+  '30m':'Congestion will rise slightly. Leave as soon as possible for best conditions.',
+  '1h':'Peak hour approaching. Expect 20% higher travel time than current.',
+  '2h':'Traffic typically eases after noon. Good window to travel.',
+  'tomorrow':'Morning commute is 30% lighter. Best window: 7–8 AM tomorrow.'
+};
+
+// ── STATE ──────────────────────────────────────────────────
+let liveData={speed:24,cong:68,acc:6,veh:412};
+let currentWeather=WEATHER_POOL[0];
+let currentSignals=[];
+let lastHourRefreshed=-1;
+let alertsLastUpdated=null;
+
+// ── CLOCK & REFRESH ORCHESTRATOR ──────────────────────────
+function tick(){
+  const now=new Date();
+  const ts=now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('clock').textContent=ts+' IST';
+  document.getElementById('footerTime').textContent='Updated: '+ts;
+  document.getElementById('mapTime').textContent=ts;
+
+  // Countdown to next minute
+  const secLeft=60-now.getSeconds();
+  document.getElementById('updateBar').textContent='KPIs refresh: '+secLeft+'s';
+
+  // KPI refresh every 60s
+  if(now.getSeconds()===0) refreshKPIs();
+
+  // Hourly refresh for alerts, weather, signals
+  const currentHour=now.getHours();
+  if(currentHour!==lastHourRefreshed){
+    lastHourRefreshed=currentHour;
+    hourlyRefresh(now);
+  }
+}
+
+function hourlyRefresh(now){
+  refreshWeather(now);
+  refreshSignals(now);
+  refreshAlerts(now);
+  refreshPredictions();
+  console.log('[Traffic Pulse] Hourly refresh at '+now.toLocaleTimeString());
+}
+
+function timeLabel(now){
+  return now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ── KPI REFRESH (every 60s) ─────────────────────────────
+function refreshKPIs(){
+  // Simulate realistic fluctuations
+  const hr=new Date().getHours();
+  const peakFactor=(hr>=8&&hr<=10)||(hr>=17&&hr<=19)?1.2:(hr>=11&&hr<=14)?0.9:1;
+  liveData.speed=Math.round((20+Math.random()*14)*( 1/peakFactor));
+  liveData.cong= Math.round((55+Math.random()*25)*peakFactor);
+  liveData.acc=  Math.round(4+Math.random()*4);
+  liveData.veh=  Math.round(350+Math.random()*100);
+  renderKPIs();
+  updateCityMap();
+}
+
+function renderKPIs(){
+  animCount('kpiSpeed',liveData.speed,' km/h');
+  animCount('kpiCong', liveData.cong,'%');
+  animCount('kpiAcc',  liveData.acc,'');
+  animCount('kpiVeh',  liveData.veh,'k');
+  document.getElementById('kpiCongSub').textContent=liveData.cong>75?'⚠ Heavy traffic':liveData.cong>50?'Moderate traffic':'Flowing well';
+  document.getElementById('kpiSpeedSub').textContent=liveData.speed<20?'⚠ Very slow':liveData.speed<30?'Below avg':'Good flow';
+  document.getElementById('kpiAccSub').textContent=liveData.acc+' active incidents';
+}
+
+function animCount(id,val,suffix){
+  const el=document.getElementById(id);
+  let c=0,step=val/20;
+  const t=setInterval(()=>{c=Math.min(c+step,val);el.textContent=Math.floor(c)+suffix;if(c>=val)clearInterval(t);},40);
+}
+
+// ── WEATHER REFRESH (hourly) ────────────────────────────
+function refreshWeather(now){
+  // Pick weather based on hour (morning clear, afternoon cloudy/rain, evening clear)
+  const hr=now.getHours();
+  let idx=hr>=14&&hr<=18?Math.floor(Math.random()*2)+2:hr>=8&&hr<=12?1:0;
+  currentWeather=WEATHER_POOL[idx];
+  const lbl=timeLabel(now);
+  document.getElementById('wTemp').textContent=currentWeather.temp;
+  document.getElementById('wHum').textContent=currentWeather.hum;
+  document.getElementById('wIcon').textContent=currentWeather.icon;
+  document.getElementById('wWind').textContent=currentWeather.wind;
+  document.getElementById('wVis').textContent=currentWeather.vis;
+  document.getElementById('wUV').textContent=currentWeather.uv;
+  document.getElementById('wRain').textContent=currentWeather.rain;
+  document.getElementById('weatherAlert').textContent=currentWeather.alert;
+  document.getElementById('weatherUpdated').textContent='Updated '+lbl;
+  document.getElementById('hWeather').textContent=currentWeather.header;
+  document.getElementById('weatherChip').innerHTML='🌤 <span id="hWeather">'+currentWeather.header+'</span>';
+}
+
+// ── SIGNALS REFRESH (hourly + live countdown) ──────────
+let signalTimers=[];
+function refreshSignals(now){
+  clearInterval(signalTimers._interval);
+  const lbl=timeLabel(now);
+  document.getElementById('signalUpdated').textContent='Updated '+lbl;
+
+  // Generate fresh signal states
+  const phases=['red','green','amber'];
+  const timings={red:[90,100,110,120],green:[30,40,45,50,60],amber:[10,15,20]};
+  currentSignals=SIGNAL_LOCS.map(loc=>{
+    const ph=phases[Math.floor(Math.random()*phases.length)];
+    const arr=timings[ph];
+    return{loc,phase:ph,timer:arr[Math.floor(Math.random()*arr.length)]};
+  });
+  renderSignals();
+  startSignalCountdowns();
+}
+
+function renderSignals(){
+  document.getElementById('signalList').innerHTML=currentSignals.map((s,i)=>{
+    const r=s.phase==='red',g=s.phase==='green',a=s.phase==='amber';
+    return`<div class="signal-pole">
+      <div class="signal-housing">
+        <div class="sig-bulb ${r?'r-on':'r-off'}"></div>
+        <div class="sig-bulb ${a?'y-on':'y-off'}"></div>
+        <div class="sig-bulb ${g?'g-on':'g-off'}"></div>
+      </div>
+      <div class="sig-info">
+        <div class="sig-loc">${s.loc}</div>
+        <div class="sig-phase">${s.phase==='red'?'🔴 Red Phase':s.phase==='green'?'🟢 Green Phase':'🟡 Amber Phase'}</div>
+      </div>
+      <div class="sig-timer" id="sigT${i}">${s.timer}s</div>
+    </div>`;
+  }).join('');
+}
+
+function startSignalCountdowns(){
+  if(signalTimers._interval) clearInterval(signalTimers._interval);
+  signalTimers._interval=setInterval(()=>{
+    currentSignals.forEach((s,i)=>{
+      s.timer=Math.max(0,s.timer-1);
+      const el=document.getElementById('sigT'+i);
+      if(el)el.textContent=s.timer+'s';
+      if(s.timer===0){
+        // cycle phase
+        const order=['red','green','amber'];
+        const nextPh=order[(order.indexOf(s.phase)+1)%3];
+        const timings={red:[90,100,110,120],green:[30,40,45,50],amber:[10,15,20]};
+        const arr=timings[nextPh];
+        s.phase=nextPh;s.timer=arr[Math.floor(Math.random()*arr.length)];
+        renderSignals();startSignalCountdowns();
+      }
+    });
+  },1000);
+}
+
+// ── ALERTS REFRESH (hourly — new incidents each hour) ───
+function refreshAlerts(now){
+  alertsLastUpdated=now;
+  const lbl=timeLabel(now);
+  // Pick 5–7 random alerts from pool, mark recent ones as NEW
+  const shuffled=[...ALERT_POOL].sort(()=>Math.random()-.5);
+  const picked=shuffled.slice(0,5+Math.floor(Math.random()*3));
+  // Assign timestamps relative to now
+  picked.forEach((a,i)=>{
+    const minAgo=Math.abs(a.time_offset)+Math.floor(Math.random()*10);
+    a._displayTime=minAgo<60?minAgo+' min ago':Math.floor(minAgo/60)+'h '+minAgo%60+'m ago';
+    a._isNew=i<2; // first 2 are "new"
+  });
+  renderAlerts(picked,lbl);
+  document.getElementById('alertCount').textContent=picked.length+' active';
+  document.getElementById('alertRefreshLabel').textContent='Last refresh: '+lbl;
+}
+
+function renderAlerts(alerts,lbl){
+  document.getElementById('alertFeed').innerHTML=alerts.map((a,i)=>`
+    <div class="alert-item ${a.type}" onclick="openAlertModal(${i})" data-idx="${i}">
+      <div class="alert-icon">${a.icon}</div>
+      <div style="flex:1;">
+        <div class="alert-title">${a.title}${a._isNew?'<span class="alert-new">NEW</span>':''}</div>
+        <div class="alert-meta">📍 ${a.loc||'Bengaluru'}</div>
+        <div class="alert-time">🕐 ${a._displayTime}</div>
+      </div>
+      <div class="alert-updated">${lbl}</div>
+    </div>`).join('');
+  // store for modal
+  window._currentAlerts=alerts;
+}
+
+function openAlertModal(i){
+  const a=window._currentAlerts[i];if(!a)return;
+  document.getElementById('mTitle').textContent=a.icon+' '+a.title;
+  document.getElementById('mSub').textContent='LIVE INCIDENT REPORT · '+a._displayTime;
+  const sv=a.type==='danger'?'r':a.type==='warn'?'o':'g';
+  document.getElementById('mBody').innerHTML=`
+    <div class="msec">
+      <h4>Incident Details</h4>
+      <div class="inc-row ${sv}">
+        <div style="font-size:1.4rem;">${a.icon}</div>
+        <div>
+          <div class="inc-loc">📍 ${a.loc||a.title}</div>
+          <div class="inc-meta" style="margin-top:5px;">${a.desc}</div>
+          <div class="inc-meta" style="margin-top:4px;">🕐 Reported: ${a._displayTime}</div>
+          <span class="inc-badge ${sv}">Est. clearance: ${a.clear}</span>
+        </div>
+      </div>
+    </div>
+    <div class="msec">
+      <h4>Impact Assessment</h4>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:.73rem;">
+        <div style="padding:9px 12px;background:var(--panel2);border-radius:8px;color:var(--t2);">🚗 Est. delay: ${a.type==='danger'?'15–25 min':a.type==='warn'?'5–12 min':'Minimal'}</div>
+        <div style="padding:9px 12px;background:var(--panel2);border-radius:8px;color:var(--t2);">📍 Affected radius: ${a.type==='danger'?'~2–3 km':'~0.5–1 km'}</div>
+        <div style="padding:9px 12px;background:var(--panel2);border-radius:8px;color:var(--t2);">🔀 Alternate: ${a.type==='danger'?'Use NH-7 or Inner Ring Road':'Minor diversion — check Google Maps'}</div>
+        <div style="padding:9px 12px;background:var(--panel2);border-radius:8px;color:var(--t2);">⏱ Next update: Within 1 hour</div>
+      </div>
+    </div>`;
+  showModal();
+}
+
+// ── PREDICTION ROWS ────────────────────────────────────
+function refreshPredictions(){
+  const hr=new Date().getHours();
+  const base=liveData.cong;
+  const preds=[
+    {t:'Now',  p:base},
+    {t:'+30m', p:Math.min(99,Math.round(base*1.06))},
+    {t:'+1h',  p:Math.min(99,Math.round(base*(hr>=16&&hr<=18?1.18:0.95)))},
+    {t:'+2h',  p:Math.min(99,Math.round(base*0.88))},
+    {t:'+3h',  p:Math.min(99,Math.round(base*0.78))},
+    {t:'+4h',  p:Math.min(99,Math.round(base*0.68))},
+    {t:'+6h',  p:Math.min(99,Math.round(base*0.52))},
+  ];
+  const w=document.getElementById('predRows');
+  w.innerHTML=preds.map((p,i)=>{
+    const c=p.p>75?'var(--red)':p.p>50?'var(--amber)':'var(--green)';
+    return`<div class="pred-row">
+      <div class="pred-time">${p.t}</div>
+      <div class="pred-track"><div class="pred-fill" id="pf${i}" style="background:${c};width:0%;"></div></div>
+      <div class="pred-pct" style="color:${c};">${p.p}%</div>
+    </div>`;
+  }).join('');
+  document.getElementById('forecastUpdated').textContent=timeLabel(new Date());
+  setTimeout(()=>preds.forEach((_,i)=>{const b=document.getElementById('pf'+i);if(b)b.style.width=preds[i].p+'%';}),200);
+}
+
+// ── 3D CANVAS CITY MAP ────────────────────────────────
+const BUILDINGS=[
+  {id:'silkboard',  x:.60,y:.72,label:'Silk Board',  cong:92},
+  {id:'mgroad',     x:.50,y:.50,label:'MG Road',     cong:78},
+  {id:'hebbal',     x:.44,y:.25,label:'Hebbal',      cong:74},
+  {id:'krpuram',    x:.76,y:.44,label:'KR Puram',    cong:61},
+  {id:'whitefield', x:.82,y:.59,label:'Whitefield',  cong:52},
+  {id:'ecity',      x:.56,y:.88,label:'E-City',      cong:38},
+  {id:'yeshwantpur',x:.26,y:.39,label:'Yeshwantpur', cong:55},
+  {id:'bannerghatta',x:.33,y:.78,label:'Bannerghatta',cong:44},
+  {id:'airport',    x:.38,y:.10,label:'Airport',     cong:22},
+];
+
+let canvas,ctx,W,H,animId,hoveredBuilding=null;
+function initCanvas(){
+  canvas=document.getElementById('city3d');
+  resizeCanvas();
+  canvas.addEventListener('mousemove',onCanvasMove);
+  canvas.addEventListener('click',onCanvasClick);
+  canvas.addEventListener('touchstart',onCanvasTouch,{passive:true});
+  window.addEventListener('resize',resizeCanvas);
+  drawCity();
+}
+
+function resizeCanvas(){
+  const wrap=canvas.parentElement;
+  W=canvas.width=wrap.clientWidth;
+  H=canvas.height=wrap.clientHeight||340;
+}
+
+function congColor(c){
+  if(c>75)return{top:'#ef9a9a',side:'#c62828',road:'rgba(229,57,53,.6)'};
+  if(c>50)return{top:'#ffe082',side:'#f57c00',road:'rgba(245,124,0,.5)'};
+  return{top:'#a5d6a7',side:'#2e7d32',road:'rgba(0,137,123,.4)'};
+}
+
+let animAngle=0;
+function drawCity(){
+  cancelAnimationFrame(animId);
+  ctx=canvas.getContext('2d');
+  // Sky gradient
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#c8e8ff');sky.addColorStop(1,'#e8f4ff');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+
+  // Isometric grid ground
+  ctx.save();
+  ctx.strokeStyle='rgba(100,160,220,0.15)';ctx.lineWidth=.8;
+  const step=32;
+  for(let gx=0;gx<W+H;gx+=step){
+    ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx-H*0.4,H);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(gx-H*0.8,0);ctx.lineTo(gx,H);ctx.stroke();
+  }
+  ctx.restore();
+
+  // Roads
+  drawRoads();
+
+  // Buildings
+  BUILDINGS.forEach(b=>{
+    const bx=b.x*W,by=b.y*H;
+    const {top,side}=congColor(b.cong);
+    const bw=Math.max(28,W*0.045),bh=Math.max(14,W*0.022);
+    const floors=Math.round(3+b.cong/25);
+    const bHeight=floors*bh;
+    const iso={dx:bw*.5,dy:bh*.25};
+    const isHov=hoveredBuilding===b.id;
+    const lift=isHov?-8:0;
+    const by2=by+lift;
+
+    // Shadow
+    ctx.save();ctx.globalAlpha=.15;
+    ctx.fillStyle='#002060';
+    ctx.beginPath();
+    ctx.ellipse(bx+bw*.3,by+bh*.5,bw*.7,bh*.3,0,0,Math.PI*2);
+    ctx.fill();ctx.restore();
+
+    // Side face (depth)
+    ctx.fillStyle=side;
+    ctx.beginPath();
+    ctx.moveTo(bx+bw,by2);ctx.lineTo(bx+bw+iso.dx,by2-iso.dy);
+    ctx.lineTo(bx+bw+iso.dx,by2-bHeight-iso.dy);ctx.lineTo(bx+bw,by2-bHeight);
+    ctx.closePath();ctx.fill();
+
+    // Front face
+    const grad=ctx.createLinearGradient(bx,by2-bHeight,bx+bw,by2);
+    grad.addColorStop(0,isHov?top:lighten(top,20));grad.addColorStop(1,top);
+    ctx.fillStyle=grad;
+    ctx.beginPath();
+    ctx.moveTo(bx,by2);ctx.lineTo(bx+bw,by2);
+    ctx.lineTo(bx+bw,by2-bHeight);ctx.lineTo(bx,by2-bHeight);
+    ctx.closePath();ctx.fill();
+    // windows
+    ctx.fillStyle='rgba(255,255,255,0.25)';
+    for(let wr=0;wr<Math.min(floors,4);wr++){
+      for(let wc=0;wc<3;wc++){
+        ctx.fillRect(bx+6+wc*9,by2-bHeight+8+wr*bh,5,4);
+      }
+    }
+    // border
+    ctx.strokeStyle=isHov?'#1565c0':'rgba(0,0,0,0.15)';
+    ctx.lineWidth=isHov?2:0.5;
+    ctx.strokeRect(bx,by2-bHeight,bw,bHeight);
+
+    // Top face
+    ctx.fillStyle=isHov?'#bbdefb':top;
+    ctx.beginPath();
+    ctx.moveTo(bx,by2-bHeight);ctx.lineTo(bx+bw,by2-bHeight);
+    ctx.lineTo(bx+bw+iso.dx,by2-bHeight-iso.dy);ctx.lineTo(bx+iso.dx,by2-bHeight-iso.dy);
+    ctx.closePath();ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.1)';ctx.lineWidth=.5;ctx.stroke();
+
+    // Congestion pillar / beam above
+    const beamH=Math.round(b.cong/100*30);
+    ctx.save();ctx.globalAlpha=.7;
+    ctx.fillStyle=b.cong>75?'#ef5350':b.cong>50?'#ffa726':'#66bb6a';
+    ctx.fillRect(bx+bw/2-3,by2-bHeight-beamH-iso.dy-6,6,beamH);
+    ctx.restore();
+
+    // Label
+    ctx.save();
+    ctx.font=`bold ${Math.round(W*.016)}px 'JetBrains Mono'`;
+    ctx.fillStyle=isHov?'#1565c0':'#0d2040';
+    ctx.textAlign='center';
+    ctx.fillText(b.label,bx+bw/2+iso.dx/2,by2-bHeight-iso.dy-beamH-10);
+    ctx.font=`${Math.round(W*.013)}px 'JetBrains Mono'`;
+    ctx.fillStyle=b.cong>75?'#c62828':b.cong>50?'#e65100':'#1b5e20';
+    ctx.fillText(b.cong+'%',bx+bw/2+iso.dx/2,by2-bHeight-iso.dy-beamH-2);
+    ctx.restore();
+  });
+
+  animAngle+=0.005;
+  animId=requestAnimationFrame(drawCity);
+}
+
+function drawRoads(){
+  const roads=[
+    {x1:.10,y1:.50,x2:.90,y2:.50,c:'rgba(249,168,37,.55)',w:8},  // MG Road
+    {x1:.50,y1:.05,x2:.50,y2:.95,c:'rgba(0,137,123,.5)',w:8},    // NH7
+    // ORR approximate segments
+    {x1:.15,y1:.25,x2:.85,y2:.25,c:'rgba(229,57,53,.4)',w:5},
+    {x1:.15,y1:.75,x2:.85,y2:.75,c:'rgba(229,57,53,.4)',w:5},
+    {x1:.15,y1:.25,x2:.15,y2:.75,c:'rgba(229,57,53,.4)',w:5},
+    {x1:.85,y1:.25,x2:.85,y2:.75,c:'rgba(229,57,53,.4)',w:5},
+  ];
+  roads.forEach(r=>{
+    ctx.save();
+    ctx.strokeStyle=r.c;ctx.lineWidth=r.w;ctx.lineCap='round';
+    ctx.shadowColor=r.c;ctx.shadowBlur=4;
+    ctx.beginPath();ctx.moveTo(r.x1*W,r.y1*H);ctx.lineTo(r.x2*W,r.y2*H);ctx.stroke();
+    ctx.restore();
+  });
+}
+
+function lighten(hex,amt){
+  const n=parseInt(hex.replace('#',''),16);
+  const r=Math.min(255,((n>>16)&0xff)+amt);
+  const g=Math.min(255,((n>>8)&0xff)+amt);
+  const b=Math.min(255,(n&0xff)+amt);
+  return`rgb(${r},${g},${b})`;
+}
+
+function getBuildingAt(mx,my){
+  for(const b of BUILDINGS){
+    const bx=b.x*W,by=b.y*H;
+    const bw=Math.max(28,W*.045),bh=Math.max(14,W*.022);
+    const floors=Math.round(3+b.cong/25);
+    const bHeight=floors*bh;
+    if(mx>=bx&&mx<=bx+bw&&my>=by-bHeight&&my<=by)return b;
+  }
+  return null;
+}
+
+function onCanvasMove(e){
+  const r=canvas.getBoundingClientRect();
+  const b=getBuildingAt(e.clientX-r.left,e.clientY-r.top);
+  hoveredBuilding=b?b.id:null;
+  canvas.style.cursor=b?'pointer':'default';
+  if(b){
+    const nd=NODES[b.id];
+    document.getElementById('city3dInfo').textContent=
+      b.label+' · '+nd.speed+' km/h · '+nd.cong+'% · Wait: '+nd.wait;
+  } else {
+    document.getElementById('city3dInfo').textContent='Click a building for details';
+  }
+}
+
+function onCanvasClick(e){
+  const r=canvas.getBoundingClientRect();
+  const b=getBuildingAt(e.clientX-r.left,e.clientY-r.top);
+  if(b)openNodeModal(b.id);
+}
+function onCanvasTouch(e){
+  const r=canvas.getBoundingClientRect();
+  const t=e.touches[0];
+  const b=getBuildingAt(t.clientX-r.left,t.clientY-r.top);
+  if(b)openNodeModal(b.id);
+}
+
+function updateCityMap(){
+  BUILDINGS.forEach(b=>{
+    const nd=NODES[b.id];
+    if(nd){
+      b.cong=nd.cong+Math.round((Math.random()-.5)*8);
+      b.cong=Math.max(10,Math.min(99,b.cong));
+    }
+  });
+}
+
+// ── NODE MODAL ────────────────────────────────────────
+function openNodeModal(id){
+  const nd=NODES[id];if(!nd)return;
+  const c=nd.cong>75?'var(--red)':nd.cong>50?'var(--amber)':'var(--green)';
+  const hr=[85,88,92,78,65,60,55,62,75,70,60,58];
+  const lbls=['6A','7A','8A','9A','10A','11A','12P','1P','2P','3P','4P','5P'];
+  document.getElementById('mTitle').textContent='📍 '+nd.name;
+  document.getElementById('mSub').textContent='LIVE JUNCTION REPORT · Updated just now';
+  document.getElementById('mBody').innerHTML=`
+    <div class="mkpi-row">
+      <div class="mkpi"><div class="mkpi-n" style="color:var(--blue);">${nd.speed} km/h</div><div class="mkpi-l">Avg Speed</div></div>
+      <div class="mkpi"><div class="mkpi-n" style="color:${c};">${nd.cong}%</div><div class="mkpi-l">Congestion</div></div>
+      <div class="mkpi"><div class="mkpi-n" style="color:var(--amber);">${nd.wait}</div><div class="mkpi-l">Avg Wait</div></div>
+    </div>
+    <div class="mkpi-row">
+      <div class="mkpi"><div class="mkpi-n" style="color:var(--red);">${nd.incidents}</div><div class="mkpi-l">Incidents</div></div>
+      <div class="mkpi"><div class="mkpi-n" style="color:var(--t);">${nd.lanes}</div><div class="mkpi-l">Lanes</div></div>
+      <div class="mkpi"><div class="mkpi-n" style="color:var(--green);">${nd.vol}</div><div class="mkpi-l">Volume/hr</div></div>
+    </div>
+    <div class="msec">
+      <h4>Hourly Congestion Today</h4>
+      <div class="mc-wrap">${hr.map((h,i)=>`<div class="mc-bw"><div class="mc-b" id="mb${i}" style="height:0%;background:${h>80?'#ef5350':h>60?'#ffa726':'#66bb6a'};opacity:.9;"></div><div class="mc-l">${lbls[i]}</div></div>`).join('')}</div>
+    </div>
+    <div class="msec">
+      <h4>Active Incidents at this Junction</h4>
+      ${nd.incidents===0
+        ?'<div style="padding:10px;background:var(--green-l);border:1px solid rgba(0,137,123,.25);border-radius:9px;font-size:.73rem;color:#00695c;">✅ No active incidents at this junction.</div>'
+        :`<div class="inc-row r"><div style="font-size:1.1rem;">🚨</div><div><div class="inc-loc">${nd.name}</div><div class="inc-meta">Active incident reported. Police on scene.</div><span class="inc-badge r">ACTIVE · Est. clear: 25 min</span></div></div>`}
+    </div>
+    <div class="msec">
+      <h4>Alternate Routes</h4>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:.73rem;color:var(--t2);">
+        <div style="padding:8px 12px;background:var(--panel2);border-radius:8px;">🔀 Via Inner Ring Road — ~4 min extra, 40% less congested</div>
+        <div style="padding:8px 12px;background:var(--panel2);border-radius:8px;">🔀 Via Bannerghatta Road — ~8 min extra, currently flowing</div>
+      </div>
+    </div>`;
+  showModal();
+  setTimeout(()=>hr.forEach((_,i)=>{const b=document.getElementById('mb'+i);if(b)b.style.height=hr[i]+'%';}),200);
+}
+
+// ── KPI MODALS ────────────────────────────────────────
+function openModal(type){
+  const hr=new Date().getHours();
+  if(type==='accidents'){
+    const pool=window._currentAlerts||[];
+    document.getElementById('mTitle').textContent='🚨 Accident & Incident Report';
+    document.getElementById('mSub').textContent='LIVE DATA · '+pool.length+' active incidents · Updated this hour';
+    const accHr=[2,4,6,5,4,3,3,4,5,4,3,2];
+    document.getElementById('mBody').innerHTML=`
+      <div class="mkpi-row">
+        <div class="mkpi"><div class="mkpi-n" style="color:var(--red);">${liveData.acc}</div><div class="mkpi-l">Active</div></div>
+        <div class="mkpi"><div class="mkpi-n" style="color:var(--amber);">3</div><div class="mkpi-l">Minor</div></div>
+        <div class="mkpi"><div class="mkpi-n" style="color:var(--green);">2</div><div class="mkpi-l">Cleared</div></div>
+      </div>
+      <div class="msec"><h4>All Active Incidents</h4>
+        ${pool.filter(a=>a.type==='danger').map(a=>`<div class="inc-row r"><div style="font-size:1.1rem;">${a.icon}</div><div><div class="inc-loc">📍 ${a.loc}</div><div class="inc-meta">🕐 ${a._displayTime} · ${a.desc}</div><span class="inc-badge r">Est: ${a.clear}</span></div></div>`).join('')}
+        ${pool.filter(a=>a.type==='warn').map(a=>`<div class="inc-row o"><div style="font-size:1.1rem;">${a.icon}</div><div><div class="inc-loc">📍 ${a.loc}</div><div class="inc-meta">🕐 ${a._displayTime} · ${a.desc}</div><span class="inc-badge o">Est: ${a.clear}</span></div></div>`).join('')}
+      </div>
+      <div class="msec"><h4>Accidents by Hour Today</h4>
+        <div class="mc-wrap">${accHr.map((h,i)=>`<div class="mc-bw"><div class="mc-b" id="ab${i}" style="height:0%;background:${h>4?'#ef5350':h>2?'#ffa726':'#66bb6a'};"></div><div class="mc-l">${['6A','7A','8A','9A','10A','11A','12P','1P'][i]||''}</div></div>`).join('')}</div>
+      </div>`;
+    showModal();setTimeout(()=>accHr.forEach((_,i)=>{const b=document.getElementById('ab'+i);if(b)b.style.height=(accHr[i]/6*100)+'%';}),200);
+
+  }else if(type==='congestion'){
+    const zones=[
+      {n:'Silk Board–Koramangala',c:liveData.cong>80?92:78,s:'h'},
+      {n:'MG Road–Brigade Rd',   c:liveData.cong>70?78:62,s:'h'},
+      {n:'Hebbal–Yeshwantpur',   c:74,s:'h'},
+      {n:'KR Puram–Whitefield',  c:61,s:'m'},
+      {n:'Bannerghatta Road',    c:44,s:'m'},
+      {n:'Electronic City',      c:38,s:'l'},
+      {n:'Yelahanka–Airport',    c:22,s:'l'},
+    ];
+    document.getElementById('mTitle').textContent='🚦 Congestion Analysis';
+    document.getElementById('mSub').textContent='CITY-WIDE · All corridors · Current hour data';
+    const hr=[28,82,95,80,65,52,56,72,90,85,75,60];
+    document.getElementById('mBody').innerHTML=`
+      <div class="mkpi-row">
+        <div class="mkpi"><div class="mkpi-n" style="color:var(--amber);">${liveData.cong}%</div><div class="mkpi-l">City Avg</div></div>
+        <div class="mkpi"><div class="mkpi-n" style="color:var(--red);">92%</div><div class="mkpi-l">Worst Zone</div></div>
+        <div class="mkpi"><div class="mkpi-n" style="color:var(--green);">22%</div><div class="mkpi-l">Best Zone</div></div>
+      </div>
+      <div class="msec"><h4>By Corridor</h4>
+        ${zones.map(z=>{const c=z.s==='h'?'var(--red)':z.s==='m'?'var(--amber)':'var(--green)';return`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--sky2);font-size:.72rem;">
+          <span style="flex:1;color:var(--t2);">${z.n}</span>
+          <div style="width:100px;height:7px;background:var(--sky2);border-radius:4px;overflow:hidden;"><div style="height:100%;background:${c};width:${z.c}%;border-radius:4px;"></div></div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:.63rem;color:${c};width:30px;text-align:right;">${z.c}%</span>
+        </div>`;}).join('')}
+      </div>
+      <div class="msec"><h4>Hourly Trend</h4>
+        <div class="mc-wrap">${hr.map((h,i)=>`<div class="mc-bw"><div class="mc-b" id="cb${i}" style="height:0%;background:${h>80?'#ef5350':h>60?'#ffa726':'#66bb6a'};"></div><div class="mc-l">${['6A','7A','8A','9A','10A','11A','12P','1P'][i]||''}</div></div>`).join('')}</div>
+      </div>`;
+    showModal();setTimeout(()=>hr.forEach((_,i)=>{const b=document.getElementById('cb'+i);if(b)b.style.height=hr[i]+'%';}),200);
+
+  }else if(type==='speed'){
+    document.getElementById('mTitle').textContent='⚡ Speed Analysis';
+    document.getElementById('mSub').textContent='ALL JUNCTIONS · Live average speeds';
+    document.getElementById('mBody').innerHTML=`
+      <div class="mkpi-row">
+        <div class="mkpi"><div class="mkpi-n" style="color:var(--blue);">${liveData.speed} km/h</div><div class="mkpi-l">City Avg</div></div>
+        <div class="mkpi"><div class="mkpi-n" style="color:var(--green);">58 km/h</div><div class="mkpi-l">Fastest</div></div>
+        <div class="mkpi"><div class="mkpi-n" style="color:var(--red);">12 km/h</div><div class="mkpi-l">Slowest</div></div>
+      </div>
+      <div class="msec"><h4>Speed by Junction</h4>
+        ${Object.values(NODES).map(n=>{const c=n.speed>35?'var(--green)':n.speed>22?'var(--amber)':'var(--red)';return`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--sky2);font-size:.72rem;">
+          <span style="flex:1;color:var(--t2);">${n.name}</span>
+          <div style="width:100px;height:6px;background:var(--sky2);border-radius:3px;overflow:hidden;"><div style="height:100%;background:${c};width:${(n.speed/60)*100}%;border-radius:3px;"></div></div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:.63rem;color:${c};width:54px;text-align:right;">${n.speed} km/h</span>
+        </div>`;}).join('')}
+      </div>`;
+    showModal();
+
+  }else if(type==='vehicles'){
+    document.getElementById('mTitle').textContent='🚗 Vehicle Census';
+    document.getElementById('mSub').textContent='TOTAL VEHICLES ON ROAD · Metro area · Live count';
+    document.getElementById('mBody').innerHTML=`
+      <div class="mkpi-row">
+        <div class="mkpi"><div class="mkpi-n" style="color:var(--green);">${liveData.veh}k</div><div class="mkpi-l">Total Active</div></div>
+        <div class="mkpi"><div class="mkpi-n" style="color:var(--blue);">68%</div><div class="mkpi-l">2-Wheelers</div></div>
+        <div class="mkpi"><div class="mkpi-n" style="color:var(--amber);">22%</div><div class="mkpi-l">4-Wheelers</div></div>
+      </div>
+      <div class="msec"><h4>Vehicle Types</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          ${[['🏍','Motorcycles','68%','var(--green)'],['🚗','Cars & SUVs','22%','var(--blue)'],['🚌','BMTC Buses','6%','var(--amber)'],['🚛','Trucks & HCV','4%','var(--red)']].map(([ic,l,v,c])=>`<div style="background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:1.5rem;">${ic}</div><div style="font-family:'JetBrains Mono',monospace;font-size:1rem;color:${c};font-weight:700;">${v}</div><div style="font-size:.62rem;color:var(--t3);">${l}</div></div>`).join('')}
+        </div>
+      </div>
+      <div class="msec"><h4>Volume by Junction</h4>
+        ${Object.values(NODES).map(n=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--sky2);font-size:.72rem;"><span style="color:var(--t2);">${n.name}</span><span style="font-family:'JetBrains Mono',monospace;color:var(--green);">${n.vol}</span></div>`).join('')}
+      </div>`;
+    showModal();
+  }
+}
+
+// ── ROUTE PLANNER ─────────────────────────────────────
+function planRoute(){
+  const from=document.getElementById('rFrom').value;
+  const to=document.getElementById('rTo').value;
+  const timeKey=document.getElementById('rTime').value;
+  if(!from||!to){alert('Please select both origin and destination.');return;}
+  if(from===to){alert('Origin and destination must be different.');return;}
+
+  const key=from+'-'+to,rev=to+'-'+from;
+  let route=ROUTES[key]||ROUTES[rev];
+  if(!route){
+    const fn=NODES[from]||{cong:55};const tn=NODES[to]||{cong:55};
+    const km=(6+Math.random()*16).toFixed(1);
+    route={dist:km+' km',base:Math.round(parseFloat(km)*2.4),
+      steps:[{road:'Primary Corridor',km:km+' km',bc:Math.round((fn.cong+tn.cong)/2)}]};
+  }
+
+  const mult=TIME_MULT[timeKey]||1;
+  const congMult={'now':1,'30m':1.1,'1h':1.18,'2h':0.85,'tomorrow':0.7}[timeKey]||1;
+  const adjTime=Math.round(route.base*mult);
+
+  const rr=document.getElementById('routeResult');
+  rr.classList.remove('show');
+  setTimeout(()=>{
+    document.getElementById('rrTime').textContent=adjTime+' min';
+    document.getElementById('rrMeta').textContent=route.dist+' · '+{now:'Now',  '30m':'In 30 min','1h':'In 1 hr','2h':'In 2 hrs',tomorrow:'Tomorrow 8 AM'}[timeKey];
+    const avg=Math.round(route.steps.reduce((s,x)=>s+x.bc,0)/route.steps.length*congMult);
+    document.getElementById('rrStatus').innerHTML=`<span class="spill ${avg>75?'h':avg>50?'m':'l'}">${avg>75?'HEAVY':avg>50?'MODERATE':'CLEAR'}</span>`;
+
+    document.getElementById('routeSteps').innerHTML=route.steps.map(s=>{
+      const sc=Math.min(99,Math.round(s.bc*congMult));
+      const c=sc>75?'var(--red)':sc>50?'var(--amber)':'var(--green)';
+      const bg=sc>75?'var(--red-l)':sc>50?'var(--amber-l)':'var(--green-l)';
+      return`<div class="rt-step"><div class="rt-dot" style="background:${c};"></div><div><div class="rt-road">${s.road} <span style="font-weight:400;color:var(--t3);font-size:.64rem;">(${s.km})</span></div><div class="rt-detail">${sc>75?'Heavy':'Moderate'} traffic</div><span class="rt-badge" style="background:${bg};color:${c};">${sc}% congested</span></div></div>`;
+    }).join('');
+
+    const nowC=Math.round(route.steps[0].bc);
+    const depC=Math.min(99,Math.round(nowC*congMult));
+    const nc=nowC>75?'var(--red)':nowC>50?'var(--amber)':'var(--green)';
+    const dc=depC>75?'var(--red)':depC>50?'var(--amber)':'var(--green)';
+    document.getElementById('tntGrid').innerHTML=`
+      <div class="tnt-card"><div class="tnt-lbl">Traffic Right Now</div><div class="tnt-val" style="color:${nc};">${nowC}%</div><div class="tnt-sub">${nowC>75?'Heavy':nowC>50?'Moderate':'Clear'}</div></div>
+      <div class="tnt-card"><div class="tnt-lbl">At Departure</div><div class="tnt-val" style="color:${dc};">${depC}%</div><div class="tnt-sub">${adjTime} min est.</div></div>`;
+
+    const rfVals=[nowC,Math.round(nowC*1.08),Math.round(nowC*1.15),Math.round(nowC*.9),Math.round(nowC*.75),Math.round(nowC*.6)];
+    document.getElementById('rfBars').innerHTML=rfVals.map((v,i)=>{
+      const fc=v>75?'#ef5350':v>50?'#ffa726':'#66bb6a';
+      return`<div class="rf-bw"><div class="rf-bar" id="rfb${i}" style="height:0%;background:${fc};"></div><div class="rf-lbl">${i===0?'Now':'+'+i+'h'}</div></div>`;
+    }).join('');
+    setTimeout(()=>rfVals.forEach((_,i)=>{const b=document.getElementById('rfb'+i);if(b)b.style.height=Math.min(rfVals[i],99)+'%';}),100);
+
+    document.getElementById('routeTip').innerHTML='💡 '+TIME_TIPS[timeKey];
+    rr.classList.add('show');
+  },80);
+}
+
+// ── MODAL HELPERS ─────────────────────────────────────
+function showModal(){document.getElementById('modalBg').classList.add('show');}
+function closeModal(){document.getElementById('modalBg').classList.remove('show');}
+document.getElementById('modalBg').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+// ── INIT ──────────────────────────────────────────────
+window.addEventListener('load',()=>{
+  initCanvas();
+  const now=new Date();
+  // Initial data load
+  liveData={speed:24,cong:68,acc:6,veh:412};
+  renderKPIs();
+  refreshWeather(now);
+  refreshSignals(now);
+  refreshAlerts(now);
+  refreshPredictions();
+  lastHourRefreshed=now.getHours();
+  setInterval(tick,1000);
+  // KPI refresh every 60s
+  setInterval(refreshKPIs,60000);
+});
+</script>
+</body>
+</html>
